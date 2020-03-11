@@ -37,7 +37,7 @@ using Microsoft.Azure.Management.Media;
 using Microsoft.Azure.Management.Media.Models;
 
 using Newtonsoft.Json;
-
+using System;
 
 namespace amsv3functions
 {
@@ -79,59 +79,102 @@ namespace amsv3functions
 
                 if (transform == null)
                 {
-                    // You need to specify what you want it to produce as an output
-                    var transformOutputList = new List<TransformOutput>();
-
-                    // BuiltInStandardEncoderPreset
-                    if (data.builtInStandardEncoderPreset != null)
+                    // Create a new Transform Outputs array - this defines the set of outputs for the Transform
+                    TransformOutput[] outputs = new TransformOutput[]
                     {
-                        EncoderNamedPreset preset = EncoderNamedPreset.AdaptiveStreaming;
+			            new TransformOutput(
+                            new StandardEncoderPreset(
+                                codecs: new Codec[]
+                                {
+							        // Add an AAC Audio layer for the audio encoding
+							        new AacAudio(
+                                        channels: 1,
+                                        samplingRate: 48000,
+                                        bitrate: 64000,
+                                        profile: AacAudioProfile.AacLc
+                                    ),
+							        // Next, add a H264Video for the video encoding
+						            new H264Video (
+								        // Set the GOP interval to 2 seconds for both H264Layers
+								        keyFrameInterval:TimeSpan.FromSeconds(2),
+                                        stretchMode: StretchMode.None,
+								            // Add H264Layers, one at HD and the other at SD. Assign a label that you can use for the output filename
+								        layers:  new H264Layer[]
+                                        {
+                                            new H264Layer (
+                                                    bitrate: 1000000,
+                                                    maxBitrate: 1000000,
+                                                    label: "HD",
+                                                    bufferWindow: TimeSpan.FromSeconds(5),
+                                                    width: "1080",
+                                                    height: "720",
+                                                    referenceFrames: 3,
+                                                    entropyMode: "Cabac",
+                                                    adaptiveBFrame: true,
+                                                    frameRate: "0/1"
+                                            ),
+                                            new H264Layer (
+                                                    bitrate: 750000,
+                                                    maxBitrate: 750000,
+                                                    label: "SD",
+                                                    bufferWindow: TimeSpan.FromSeconds(5),
+                                                    width: "720",
+                                                    height: "480",
+                                                    referenceFrames: 3,
+                                                    entropyMode: "Cabac",
+                                                    adaptiveBFrame: true,
+                                                    frameRate: "0/1"
+                                            ),
+                                            new H264Layer (
+                                                    bitrate: 500000,
+                                                    maxBitrate: 500000,
+                                                    label: "HD",
+                                                    bufferWindow: TimeSpan.FromSeconds(5),
+                                                    width: "540",
+                                                    height: "360",
+                                                    referenceFrames: 3,
+                                                    entropyMode: "Cabac",
+                                                    adaptiveBFrame: true,
+                                                    frameRate: "0/1"
+                                            ),
+                                            new H264Layer (
+                                                    bitrate: 200000,
+                                                    maxBitrate: 200000,
+                                                    label: "HD",
+                                                    bufferWindow: TimeSpan.FromSeconds(5),
+                                                    width: "360",
+                                                    height: "240",
+                                                    referenceFrames: 3,
+                                                    entropyMode: "Cabac",
+                                                    adaptiveBFrame: true,
+                                                    frameRate: "0/1"
+                                            )
+                                        }
+                                    ),
+                                },
+						        // Specify the format for the output files - one for video+audio, and another for the thumbnails
+						        formats: new Format[]
+                                {
+							        // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
+							        // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+							        // Either {Label} or {Bitrate} should suffice
+					 
+							        new Mp4Format(
+                                        filenamePattern:"Video-{Basename}-{Label}-{Bitrate}{Extension}"
+                                    )
+							        //,new PngFormat(
+							        //    filenamePattern:"Thumbnail-{Basename}-{Index}{Extension}"
+							        //)
+						        }
+                            ),
+                            onError: OnErrorType.StopProcessingJob,
+                            relativePriority: Priority.Normal
+                        )
+                    };
 
-                        if (data.builtInStandardEncoderPreset.presetName != null)
-                        {
-                            string presetName = data.builtInStandardEncoderPreset.presetName;
-                            if (encoderPreset.ContainsKey(presetName))
-                                preset = encoderPreset[presetName];
-                        }
-
-                        TransformOutput encoderTransform = new TransformOutput
-                        {
-                            // The preset for the Transform is set to one of Media Services built-in sample presets.
-                            // You can  customize the encoding settings by changing this to use "StandardEncoderPreset" class.
-                            Preset = new BuiltInStandardEncoderPreset()
-                            {
-                                // This sample uses the built-in encoding preset for Adaptive Bitrate Streaming.
-                                PresetName = preset
-                            }
-                        };
-                        transformOutputList.Add(encoderTransform);
-                    }
-
-                    // VideoAnalyzerPreset
-                    if (data.builtInStandardEncoderPreset != null)
-                    {
-                        bool audioInsightsOnly = false;
-                        string audioLanguage = "en-US";
-
-                        if (data.videoAnalyzerPreset.audioInsightsOnly != null)
-                            audioInsightsOnly = data.videoAnalyzerPreset.audioInsightsOnly;
-                        if (data.videoAnalyzerPreset.audioLanguage != null)
-                            audioLanguage = data.videoAnalyzerPreset.audioLanguage;
-
-                        TransformOutput encoderTransform = new TransformOutput
-                        {
-                            // The preset for the Transform is set to one of Media Services built-in sample presets.
-                            // You can  customize the encoding settings by changing this to use "StandardEncoderPreset" class.
-                            Preset = new VideoAnalyzerPreset(audioLanguage, audioInsightsOnly)
-                        };
-                        transformOutputList.Add(encoderTransform);
-                    }
-
-                    // You need to specify what you want it to produce as an output
-                    TransformOutput[] output = transformOutputList.ToArray();
-
-                    // Create the Transform with the output defined above
-                    transform = client.Transforms.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, transformName, output);
+                    string description = "A simple custom encoding transform with 2 MP4 bitrates";
+                    // Create the custom Transform with the outputs defined above
+                    transform = client.Transforms.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, transformName, outputs, description);
                     transformId = transform.Id;
                 }
             }
