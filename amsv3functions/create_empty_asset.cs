@@ -49,31 +49,38 @@ namespace amsv3functions
                 assetStorageAccount = data.assetStorageAccount;
             Guid assetGuid = Guid.NewGuid();
             string assetName = data.assetNamePrefix + "-" + assetGuid.ToString();
+            string fileNameTemp = "";
 
             MediaServicesConfigWrapper amsconfig = new MediaServicesConfigWrapper();
             Asset asset = null;
 
             try
             {
-                var fileNameTemp = System.IO.Path.GetFileNameWithoutExtension(data.assetNamePrefix);
-                fileNameTemp = fileNameTemp.Substring(0, 20);
-                
-                assetName = $"asset-{fileNameTemp}-{assetGuid.ToString()}";
-                
+                fileNameTemp = ((string)data.assetNamePrefix).Substring(0, 20).Replace(".","").Replace("-", "").Replace("_", "");
+                fileNameTemp = $"asset-{fileNameTemp}-{assetGuid.ToString()}";
+                fileNameTemp = fileNameTemp.ToLower().Substring(0, 63);
+
+                assetName = fileNameTemp;
+
                 IAzureMediaServicesClient client = CreateMediaServicesClient(amsconfig);
                 Asset assetParams = new Asset(null, assetName, null, assetGuid, DateTime.Now, DateTime.Now, null, assetName, null, assetStorageAccount, AssetStorageEncryptionFormat.None);
-                assetParams.Container = assetName;
+                assetParams.Container = fileNameTemp;
                 
                 asset = client.Assets.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, assetName, assetParams);
                 //asset = client.Assets.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, assetName, new Asset());
             }
             catch (ApiErrorException e)
             {
+                log.Error("Error when trying to create empty asset", e);
                 log.Info($"ERROR: AMS API call failed with error code: {e.Body.Error.Code} and message: {e.Body.Error.Message}");
                 return req.CreateResponse(HttpStatusCode.BadRequest, new
                 {
                     error = "AMS API call error: " + e.Message
                 });
+            }
+            catch(Exception ex)
+            {
+                log.Error("Error when trying to create empty asset", ex);
             }
 
             return req.CreateResponse(HttpStatusCode.OK, new

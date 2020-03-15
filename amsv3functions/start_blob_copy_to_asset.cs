@@ -80,6 +80,8 @@ namespace amsv3functions
             MediaServicesConfigWrapper amsconfig = new MediaServicesConfigWrapper();
             Asset asset = null;
 
+            string destinationContainer = "";
+
             try
             {
                 IAzureMediaServicesClient client = CreateMediaServicesClient(amsconfig);
@@ -93,6 +95,8 @@ namespace amsv3functions
                 var response = client.Assets.ListContainerSas(amsconfig.ResourceGroup, amsconfig.AccountName, assetName, permissions: AssetContainerPermission.ReadWrite, expiryTime: DateTime.UtcNow.AddHours(4).ToUniversalTime());
                 var sasUri = new Uri(response.AssetContainerSasUrls.First());
                 CloudBlobContainer destinationBlobContainer = new CloudBlobContainer(sasUri);
+
+                destinationContainer = destinationBlobContainer.Name;
 
                 // Copy Source Blob container into Destination Blob container that is associated with the asset.
                 BlobStorageHelper.CopyBlobsAsync(sourceBlobContainer, destinationBlobContainer, fileNames, log);
@@ -108,7 +112,7 @@ namespace amsv3functions
 
             return req.CreateResponse(HttpStatusCode.OK, new
             {
-                destinationContainer = $"asset-{data.assetId}"
+                destinationContainer = destinationContainer
             });
         }
 
