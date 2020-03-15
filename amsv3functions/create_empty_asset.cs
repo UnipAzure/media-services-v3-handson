@@ -56,9 +56,19 @@ namespace amsv3functions
 
             try
             {
-                fileNameTemp = ((string)data.assetNamePrefix).Substring(0, 20).Replace(".","").Replace("-", "").Replace("_", "");
+                if(((string)data.assetNamePrefix).Length > 20)
+                {
+                    fileNameTemp = ((string)data.assetNamePrefix).Substring(0, 20);
+                }
+
+                fileNameTemp = fileNameTemp.Replace(".", "").Replace("-", "").Replace("_", "");
                 fileNameTemp = $"asset-{fileNameTemp}-{assetGuid.ToString()}";
-                fileNameTemp = fileNameTemp.ToLower().Substring(0, 63);
+
+                if(fileNameTemp.Length > 63)
+                {
+                    fileNameTemp = fileNameTemp.Substring(0, 63);
+                }
+                fileNameTemp = fileNameTemp.ToLower();
 
                 assetName = fileNameTemp;
 
