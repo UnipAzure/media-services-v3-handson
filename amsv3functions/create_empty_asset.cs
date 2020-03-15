@@ -55,8 +55,15 @@ namespace amsv3functions
 
             try
             {
+                var fileNameTemp = System.IO.Path.GetFileNameWithoutExtension(data.assetNamePrefix);
+                fileNameTemp = fileNameTemp.Substring(0, 20);
+                
+                assetName = $"asset-{fileNameTemp}-{assetGuid.ToString()}";
+                
                 IAzureMediaServicesClient client = CreateMediaServicesClient(amsconfig);
                 Asset assetParams = new Asset(null, assetName, null, assetGuid, DateTime.Now, DateTime.Now, null, assetName, null, assetStorageAccount, AssetStorageEncryptionFormat.None);
+                assetParams.Container = assetName;
+                
                 asset = client.Assets.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, assetName, assetParams);
                 //asset = client.Assets.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, assetName, new Asset());
             }
@@ -68,7 +75,6 @@ namespace amsv3functions
                     error = "AMS API call error: " + e.Message
                 });
             }
-
 
             return req.CreateResponse(HttpStatusCode.OK, new
             {
