@@ -24,6 +24,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.IO;
 
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -107,7 +108,7 @@ namespace amsv3functions
 
             return req.CreateResponse(HttpStatusCode.OK, new
             {
-                destinationContainer = $"asset-{data.assetId}"
+                destinationContainer = $"asset-{Path.GetFileNameWithoutExtension(fileNames[0])}-{data.assetId}"
             });
         }
 
