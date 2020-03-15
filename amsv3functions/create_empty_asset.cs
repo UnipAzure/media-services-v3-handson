@@ -27,7 +27,7 @@ using Microsoft.Azure.Management.Media;
 using Microsoft.Azure.Management.Media.Models;
 
 using Newtonsoft.Json;
-
+using System.Text.RegularExpressions;
 
 namespace amsv3functions
 {
@@ -56,12 +56,15 @@ namespace amsv3functions
 
             try
             {
-                if(((string)data.assetNamePrefix).Length > 20)
+                fileNameTemp = ((string)data.assetNamePrefix);
+
+                if (fileNameTemp.Length > 20)
                 {
-                    fileNameTemp = ((string)data.assetNamePrefix).Substring(0, 20);
+                    fileNameTemp = fileNameTemp.Substring(0, 20);
                 }
 
-                fileNameTemp = fileNameTemp.Replace(".", "").Replace("-", "").Replace("_", "");
+                fileNameTemp = Regex.Replace(fileNameTemp, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
+                fileNameTemp = fileNameTemp.Replace(" ", string.Empty).Replace(".", "").Replace("-", "").Replace("_", "");
                 fileNameTemp = $"asset-{fileNameTemp}-{assetGuid.ToString()}";
 
                 if(fileNameTemp.Length > 63)
