@@ -74,6 +74,8 @@ namespace amsv3functions
             string locatorName = "locator-" + guid;
             PublishAssetOutput output = null;
 
+            string outputAsset = "";
+
             try
             {
                 IAzureMediaServicesClient client = CreateMediaServicesClient(amsconfig);
@@ -86,6 +88,12 @@ namespace amsv3functions
                         AssetName = publishAssetName,
                         StreamingPolicyName = streamingPolicy,
                     });
+
+                var asset = client.Assets.Get(amsconfig.ResourceGroup, amsconfig.AccountName, publishAssetName);
+                if (asset == null)
+                {
+                    outputAsset = asset.Container;
+                }
 
                 string streamingUrlPrefx = "";
                 StreamingEndpoint streamingEndpoint = client.StreamingEndpoints.Get(amsconfig.ResourceGroup, amsconfig.AccountName, streamingEndpointName);

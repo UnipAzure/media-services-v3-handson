@@ -75,7 +75,8 @@ namespace amsv3functions
             return req.CreateResponse(HttpStatusCode.OK, new
             {
                 // job status
-                jobStatus = job.State
+                jobStatus = job.State,
+                obj = JsonConvert.SerializeObject(job)
                 // job output progress
             });
         }

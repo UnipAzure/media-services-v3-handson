@@ -65,9 +65,13 @@ namespace amsv3functions
             string jobName = "amsv3function-job-" + guid;
             string encoderOutputAssetName = null;
             string videoAnalyzerOutputAssetName = null;
+            string outputContainer = null;
 
             try
             {
+                var containerName = inputAssetName;
+                containerName =  containerName.Replace("asset", "saida");
+
                 IAzureMediaServicesClient client = CreateMediaServicesClient(amsconfig);
 
                 inputAsset = client.Assets.Get(amsconfig.ResourceGroup, amsconfig.AccountName, inputAssetName);
@@ -87,9 +91,15 @@ namespace amsv3functions
                         encoderOutputAssetName = outputAssetName;
                     else if (p is VideoAnalyzerPreset)
                         videoAnalyzerOutputAssetName = outputAssetName;
-                    Asset assetParams = new Asset(null, outputAssetName, null, assetGuid, DateTime.Now, DateTime.Now, null, outputAssetName, null, assetStorageAccount, AssetStorageEncryptionFormat.None);
+
+                    Asset assetParams = new Asset(null, outputAssetName, null, assetGuid, DateTime.Now, DateTime.Now, null, outputAssetName, containerName, assetStorageAccount, AssetStorageEncryptionFormat.None);
                     Asset outputAsset = client.Assets.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, outputAssetName, assetParams);
                     jobOutputList.Add(new JobOutputAsset(outputAssetName));
+
+                    if (outputContainer != null)
+                        outputContainer += containerName + ",";
+
+                    outputContainer += containerName;
                 }
 
                 // Use the name of the created input asset to create the job input.
@@ -109,11 +119,16 @@ namespace amsv3functions
             }
             catch (ApiErrorException e)
             {
+                log.Error("error", e);
                 log.Info($"ERROR: AMS API call failed with error code: {e.Body.Error.Code} and message: {e.Body.Error.Message}");
                 return req.CreateResponse(HttpStatusCode.BadRequest, new
                 {
                     error = "AMS API call error: " + e.Message
                 });
+            }
+            catch(Exception ex)
+            {
+                log.Error("error", ex);
             }
 
 
@@ -121,7 +136,8 @@ namespace amsv3functions
             {
                 jobName = jobName,
                 encoderOutputAssetName = encoderOutputAssetName,
-                videoAnalyzerOutputAssetName = videoAnalyzerOutputAssetName
+                videoAnalyzerOutputAssetName = videoAnalyzerOutputAssetName,
+                outputGuid = outputContainer
             });
         }
 

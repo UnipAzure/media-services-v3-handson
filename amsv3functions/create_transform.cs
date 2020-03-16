@@ -174,7 +174,8 @@ namespace amsv3functions
 
                     string description = "A simple custom encoding transform with 2 MP4 bitrates";
                     // Create the custom Transform with the outputs defined above
-                    transform = client.Transforms.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, transformName, outputs, description);
+                    transform = client.Transforms.CreateOrUpdate(amsconfig.ResourceGroup, amsconfig.AccountName, transformName, outputs, description);                    
+
                     transformId = transform.Id;
                 }
             }
