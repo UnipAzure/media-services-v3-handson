@@ -65,7 +65,7 @@ namespace amsv3functions
 
                 fileNameTemp = Regex.Replace(fileNameTemp, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
                 fileNameTemp = fileNameTemp.Replace(" ", string.Empty).Replace(".", "").Replace("-", "").Replace("_", "");
-                fileNameTemp = $"asset-{fileNameTemp}-{assetGuid.ToString()}";
+                fileNameTemp = $"{fileNameTemp}-{assetGuid.ToString()}-asset";
 
                 if(fileNameTemp.Length > 63)
                 {
